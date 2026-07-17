@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Список регистраций — LM.inc</title>
+<style>
+  :root {
+    --header-bg: #2c3446;
+    --header-fg: #ffffff;
+    --row-alt: #eef1f5;
+    --row: #ffffff;
+    --border: #d7dde5;
+    --page-bg: #f4f6f9;
+    --text: #1c2230;
+    --accent: #2c3446;
+    --error: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: var(--page-bg);
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  .wrap.wide { max-width: 760px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: #5a6270; font-size: 14px; margin-top: 0; margin-bottom: 22px; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 4px 18px rgba(20, 25, 40, 0.08);
+    border: 1px solid #e2e6ed;
+  }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+    letter-spacing: 2px;
+  }
+  button.submit {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.submit:hover { background: #1c2233; }
+  .error {
+    background: #fdecea;
+    color: var(--error);
+    border: 1px solid #f3c2bd;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 14px;
+    display: none;
+  }
+  .error.show { display: block; }
+
+  .meta {
+    font-size: 13px;
+    color: #5a6270;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .meta button {
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .meta button:hover { background: #f0f2f6; }
+
+  .table-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(20, 25, 40, 0.08);
+    border: 1px solid #1c2233;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  thead th {
+    background: var(--header-bg);
+    color: var(--header-fg);
+    text-align: center;
+    padding: 12px 8px;
+    font-weight: 700;
+    border-right: 1px solid rgba(255,255,255,0.12);
+  }
+  thead th:last-child { border-right: none; }
+  tbody td { text-align: center; padding: 8px; border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:nth-child(odd) { background: var(--row); }
+  .status { text-align: center; padding: 30px 10px; color: #5a6270; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="loginScreen">
+  <h1>Список регистраций</h1>
+  <p class="sub">Страница только для организаторов. Введите пароль, чтобы посмотреть, кто уже зарегистрировался.</p>
+  <div class="card">
+    <label for="password">Пароль</label>
+    <input type="password" id="password" inputmode="numeric" maxlength="20" />
+    <div class="error" id="errorBox">Неверный пароль</div>
+    <button class="submit" id="loginBtn">Войти</button>
+  </div>
+</div>
+
+<div class="wrap wide" id="listScreen" style="display:none;">
+  <h1>Список регистраций</h1>
+  <div class="meta">
+    <span id="countLabel">Загрузка…</span>
+    <button id="refreshBtn">Обновить</button>
+  </div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Фамилия и имя</th>
+          <th>Номер пропуска</th>
+          <th>Дата и время регистрации</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="status">Загрузка…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Простая защита для внутреннего использования (не настоящая безопасность,
+  // но данные здесь не секретные — только список ФИО и номеров пропусков).
+  const PASSWORD = "445674";
+
+  // Ссылка на опубликованную как CSV Google Таблицу (File → Share → Publish to web → CSV).
+  // Вставьте сюда ссылку, которую скопировали при настройке (см. README.md).
+  const REGISTRATIONS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbWW66qut1Gnqrg9hyCG56TPSrVi7yS4GKkzD1zHUX8yIasdwVuVH2huQs4h7iOcIHu5q0xqZ8shd7/pub?output=csv";
+
+  const loginScreen = document.getElementById("loginScreen");
+  const listScreen = document.getElementById("listScreen");
+  const passwordInput = document.getElementById("password");
+  const errorBox = document.getElementById("errorBox");
+  const loginBtn = document.getElementById("loginBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const tbody = document.getElementById("tbody");
+  const countLabel = document.getElementById("countLabel");
+
+  function parseCsv(text) {
+    const rows = [];
+    let row = [], field = "", inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i++; }
+          else inQuotes = false;
+        } else field += c;
+      } else if (c === '"') {
+        inQuotes = true;
+      } else if (c === ",") {
+        row.push(field); field = "";
+      } else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); field = "";
+        if (row.some((v) => v !== "")) rows.push(row);
+        row = [];
+      } else {
+        field += c;
+      }
+    }
+    if (field !== "" || row.length) {
+      row.push(field);
+      if (row.some((v) => v !== "")) rows.push(row);
+    }
+    return rows;
+  }
+
+  function parseRegistrations(csvText) {
+    return parseCsv(csvText).map((cols) => ({
+      fullName: (cols[0] || "").trim(),
+      serial: (cols[1] || "").trim(),
+      dateIso: (cols[2] || "").trim(),
+    }));
+  }
+
+  async function loadRegistrations() {
+    tbody.innerHTML = `<tr><td colspan="4" class="status">Загрузка…</td></tr>`;
+    try {
+      const res = await fetch(`${REGISTRATIONS_CSV_URL}&_=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const text = await res.text();
+      const rows = parseRegistrations(text);
+
+      if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="status">Пока никто не зарегистрировался.</td></tr>`;
+      } else {
+        // Показываем последних зарегистрировавшихся сверху
+        rows.reverse();
+        tbody.innerHTML = "";
+        rows.forEach((row, idx) => {
+          const tr = document.createElement("tr");
+          const date = row.dateIso ? new Date(row.dateIso) : null;
+          const dateText = date && !isNaN(date) ? date.toLocaleString("ru-RU") : (row.dateIso || "—");
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${row.fullName || "—"}</td>
+            <td>${row.serial || "—"}</td>
+            <td>${dateText}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      countLabel.textContent = `Всего регистраций: ${rows.length}`;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" class="status">Не удалось загрузить список: ${err.message}</td></tr>`;
+      countLabel.textContent = "";
+    }
+  }
+
+  loginBtn.addEventListener("click", () => {
+    if (passwordInput.value === PASSWORD) {
+      loginScreen.style.display = "none";
+      listScreen.style.display = "block";
+      loadRegistrations();
+    } else {
+      errorBox.classList.add("show");
+    }
+  });
+
+  passwordInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") loginBtn.click();
+  });
+
+  refreshBtn.addEventListener("click", loadRegistrations);
+</script>
+</body>
+</html>
