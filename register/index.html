@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Регистрация — LM.inc</title>
+<style>
+  :root {
+    --header-bg: #2c3446;
+    --header-fg: #ffffff;
+    --row-alt: #eef1f5;
+    --row: #ffffff;
+    --border: #d7dde5;
+    --page-bg: #f4f6f9;
+    --text: #1c2230;
+    --accent: #2c3446;
+    --error: #b3261e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: var(--page-bg);
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+  }
+  .wrap { max-width: 520px; margin: 0 auto; }
+  .wrap.wide { max-width: 900px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: #5a6270; font-size: 14px; margin-top: 0; margin-bottom: 22px; }
+
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 4px 18px rgba(20, 25, 40, 0.08);
+    border: 1px solid #e2e6ed;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    margin-top: 16px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(44, 52, 70, 0.12);
+  }
+  .hint { font-size: 12px; color: #8a91a0; margin-top: 4px; }
+  button.submit {
+    margin-top: 22px;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.submit:disabled { opacity: 0.6; cursor: default; }
+  button.submit:not(:disabled):hover { background: #1c2233; }
+
+  .error {
+    background: #fdecea;
+    color: var(--error);
+    border: 1px solid #f3c2bd;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-top: 16px;
+    display: none;
+  }
+  .error.show { display: block; }
+
+  .success-banner {
+    background: #eaf7ef;
+    color: #1e7b3c;
+    border: 1px solid #bfe6cc;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 18px;
+  }
+
+  /* --- таблица (как на основной странице) --- */
+  .table-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(20, 25, 40, 0.08);
+    border: 1px solid #1c2233;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  thead th {
+    background: var(--header-bg);
+    color: var(--header-fg);
+    text-align: center;
+    padding: 12px 8px;
+    font-weight: 700;
+    border-right: 1px solid rgba(255,255,255,0.12);
+  }
+  thead th:last-child { border-right: none; }
+  tbody td { text-align: center; padding: 8px; border-bottom: 1px solid var(--border); }
+  tbody tr:nth-child(even) { background: var(--row-alt); }
+  tbody tr:nth-child(odd) { background: var(--row); }
+  tbody tr.me { outline: 2px solid #2c3446; outline-offset: -2px; font-weight: 700; }
+  .level-cell { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); }
+  .status { text-align: center; padding: 30px 10px; color: #5a6270; font-size: 14px; }
+
+  footer { text-align: center; font-size: 12px; color: #8a91a0; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="formScreen">
+  <h1>Регистрация стажёра</h1>
+  <p class="sub">Введите имя, фамилию и номер пропуска, чтобы увидеть таблицу рейтинга.</p>
+
+  <div class="card">
+    <label for="firstName">Имя</label>
+    <input type="text" id="firstName" placeholder="Например, Иван" autocomplete="given-name" />
+
+    <label for="lastName">Фамилия</label>
+    <input type="text" id="lastName" placeholder="Например, Петров" autocomplete="family-name" />
+
+    <label for="serial">Номер пропуска</label>
+    <input type="text" id="serial" placeholder="Например, 00012" inputmode="numeric" maxlength="5" />
+    <div class="hint">5 цифр, как указано на вашем пропуске</div>
+
+    <div class="error" id="errorBox"></div>
+
+    <button class="submit" id="submitBtn">Зарегистрироваться</button>
+  </div>
+</div>
+
+<div class="wrap wide" id="tableScreen" style="display:none;">
+  <div class="success-banner" id="successBanner"></div>
+  <h1>Уровни стажёров LM.inc</h1>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Место</th>
+          <th>Номер пропуска</th>
+          <th>Баллы</th>
+          <th>Уровень</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <tr><td colspan="4" class="status">Загрузка…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <footer>Данные обновляются автоматически из внутреннего источника LM.inc. · <a href="../admin/">Для организаторов</a></footer>
+</div>
+
+<script src="config.js"></script>
+<script>
+  const LEVELS = {
+    0: ["Светло-серый", "#D9DEE7", "#111827"],
+    1: ["Серебристый",  "#C0C7D2", "#111827"],
+    2: ["Малиновый",    "#C2185B", "#FFFFFF"],
+    3: ["Медно-рыжий",  "#B86B2E", "#FFFFFF"],
+    4: ["Кислотно-жёлтый", "#D6F700", "#111827"],
+    5: ["Тёмно-синий",  "#0A2E6F", "#FFFFFF"],
+    6: ["Фиолетовый",   "#6D28D9", "#FFFFFF"],
+    7: ["Тёмно-красный","#7F1D1D", "#FFFFFF"],
+    8: ["Изумрудный",   "#047857", "#FFFFFF"],
+    9: ["Чёрный",       "#090B10", "#FFFFFF"]
+  };
+
+  const cfg = window.APP_CONFIG;
+
+  const formScreen = document.getElementById("formScreen");
+  const tableScreen = document.getElementById("tableScreen");
+  const errorBox = document.getElementById("errorBox");
+  const submitBtn = document.getElementById("submitBtn");
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.add("show");
+  }
+  function clearError() {
+    errorBox.textContent = "";
+    errorBox.classList.remove("show");
+  }
+
+  async function submitRegistration({ firstName, lastName, serial }) {
+    // Content-Type: text/plain намеренно, чтобы браузер не делал
+    // предварительный CORS-запрос (preflight) — Apps Script на него не отвечает.
+    const res = await fetch(cfg.GAS_WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ firstName, lastName, serial }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Google Таблица вернула ошибку (HTTP ${res.status}). Проверьте ссылку GAS_WEB_APP_URL в config.js.`);
+    }
+
+    let json;
+    try {
+      json = await res.json();
+    } catch {
+      // Apps Script иногда отдаёт ответ, который browser не может распарсить
+      // как JSON из-за настроек CORS — считаем это некритичным, раз HTTP-код успешный.
+      return;
+    }
+    if (json && json.ok === false) {
+      throw new Error(`Не удалось сохранить регистрацию: ${json.error || "неизвестная ошибка"}`);
+    }
+  }
+
+  function formatRating(r) {
+    return Number.isInteger(r) ? String(r) : r.toFixed(1).replace(".", ",");
+  }
+  function levelInfo(level) {
+    return LEVELS[level] || ["Неизвестный", "#D9DEE7", "#111827"];
+  }
+
+  async function loadAndRenderTable(highlightSerial) {
+    const tbody = document.getElementById("tbody");
+    try {
+      const res = await fetch(`../${cfg.DATA_PATH}?t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      const employees = data.employees || [];
+
+      const sorted = [...employees].sort((a, b) => {
+        if (b.rating !== a.rating) return b.rating - a.rating;
+        return a.serial.localeCompare(b.serial);
+      });
+
+      tbody.innerHTML = "";
+      sorted.forEach((emp, idx) => {
+        const [name, bg, fg] = levelInfo(emp.level);
+        const tr = document.createElement("tr");
+        if (emp.serial === highlightSerial) tr.classList.add("me");
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${emp.serial}</td>
+          <td>${formatRating(emp.rating)}</td>
+          <td>
+            <span class="level-cell">
+              <span class="swatch" style="background:${bg}"></span>
+              ${emp.level} (${name})
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      return employees;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" class="status">Не удалось загрузить таблицу: ${err.message}</td></tr>`;
+      return [];
+    }
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    clearError();
+
+    const firstName = document.getElementById("firstName").value.trim();
+    const lastName = document.getElementById("lastName").value.trim();
+    const serial = document.getElementById("serial").value.trim();
+
+    if (!firstName || !lastName) {
+      showError("Заполните имя и фамилию.");
+      return;
+    }
+    if (!/^\d{5}$/.test(serial)) {
+      showError("Номер пропуска должен состоять из 5 цифр, например 00012.");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Проверяю…";
+
+    let data;
+    try {
+      // Сверяем номер пропуска с актуальными данными
+      const dataRes = await fetch(`../${cfg.DATA_PATH}?t=${Date.now()}`, { cache: "no-store" });
+      if (!dataRes.ok) {
+        throw new Error(`Файл ${cfg.DATA_PATH} не найден (код ${dataRes.status}). Проверьте, что он лежит в корне репозитория.`);
+      }
+      data = await dataRes.json();
+    } catch (err) {
+      console.error("Ошибка при проверке data.json:", err);
+      const friendly = err.name === "TypeError"
+        ? "Не удалось подключиться к серверу данных. Если вы открыли страницу внутри другого приложения (например, TikTok), откройте эту ссылку в обычном браузере (Safari/Chrome) и попробуйте снова."
+        : err.message;
+      showError(friendly);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Зарегистрироваться";
+      return;
+    }
+
+    try {
+      const employees = data.employees || [];
+      const match = employees.find((e) => e.serial === serial);
+
+      if (!match) {
+        showError("Пропуск с таким номером не найден в системе. Проверьте номер.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Зарегистрироваться";
+        return;
+      }
+
+      submitBtn.textContent = "Сохраняю регистрацию…";
+
+      await submitRegistration({ firstName, lastName, serial });
+
+      formScreen.style.display = "none";
+      tableScreen.style.display = "block";
+      document.getElementById("successBanner").textContent =
+        `Регистрация прошла успешно, ${firstName} ${lastName} (пропуск №${serial}). Ваша строка в таблице выделена.`;
+
+      await loadAndRenderTable(serial);
+    } catch (err) {
+      showError(err.message || "Не удалось выполнить регистрацию. Попробуйте ещё раз.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Зарегистрироваться";
+    }
+  });
+</script>
+</body>
+</html>
